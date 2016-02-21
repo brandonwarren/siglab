@@ -82,9 +82,11 @@ class SignalLab(object):
         subplot.set_autoscale_on(True)
         plt.grid(True)
 
-    def plot_time(self, offset_time=0.0, num_points=None, offset_dur=None):
+    def plot_time(self, offset_time=0.0, num_points=None, offset_dur=None, title=None):
         """Plot time history of sound file.
         """
+        if title is None:
+            title = self.path
         offset_i = int(0.5 + offset_time*self.sample_rate)
         if offset_dur:
             num_points = int(0.5 + offset_dur*self.sample_rate)
@@ -92,9 +94,9 @@ class SignalLab(object):
             num_points = self.n_wav_samps
         max_num_points = self.n_wav_samps - offset_i
         num_points = min(num_points, max_num_points)
-        self._plot_time(self.sound_data[offset_i:], offset_i, num_points, title=self.path)
+        self._plot_time(self.sound_data[offset_i:], offset_i, num_points, title=title)
 
-    def power_spectrum(self, offset_time, blocksize):
+    def power_spectrum(self, offset_time, blocksize, plot_it=True, title=None):
         """Compute and plot power spectrum of sound file.
         """
         # TODO: window, verify alg
@@ -102,28 +104,54 @@ class SignalLab(object):
         fft = numpy.fft.fft(self.sound_data[i:i+blocksize])
         self.power = fft*fft
         self.power = numpy.abs(self.power) # combine with line above?
-        self._plot_freq(self.power[:blocksize/2], blocksize,
-                        title='Power spectrum', xlabel='Hz',
-                        ylabel='power (no units)')
+        if plot_it:
+            if title is None:
+                title = 'Power spectrum'
+            self._plot_freq(self.power[:blocksize/2], blocksize,
+                            title=title, xlabel='Hz',
+                            ylabel='power (no units)')
 
-    def autocorrelation(self, num_points):
+    def autocorrelation(self, num_points, title=None):
         """Compute and plot autocorrelation of sound file.
 
         Uses result from power_spectrum()
         """
         # TODO: verify alg
+        if title is None:
+            title = 'Autocorrelation'
         autoc = numpy.abs(numpy.fft.ifft(self.power))
-        self._plot_time(autoc, offset_i=0, num_points=num_points, title='autoc')
+        self._plot_time(autoc, offset_i=0, num_points=num_points,
+                        title=title, ylabel='autocorrelation')
 
-    def cepstrum(self, num_points):
+    def cepstrum(self, num_points, plot_it=True, title=None):
         """Compute and plot cepstrum of sound file.
 
         Uses result from power_spectrum()
         """
         # TODO: verify alg
         cepstrum_ = numpy.abs(numpy.fft.ifft(numpy.log(self.power)))
-        cepstrum_[0] = 0
-        self._plot_time(cepstrum_, offset_i=0, num_points=num_points, title='cepstrum')
+        n_points_to_skip = 9
+        cepstrum_[0:n_points_to_skip] = 0
+##        cepstrum_[0] = 0 # no shift MUST CLEAR THIS, zero shift is always max
+##        cepstrum_[1] = 0 # 44 kHz (won't be at sample rate, or even 1/2 it
+##        cepstrum_[2] = 0 # 22kHz - don't want this often-large value boosting goodness-of-pitch
+##        cepstrum_[3] = 0 # 15kHz
+##        cepstrum_[4] = 0 # 11kHz
+##        cepstrum_[5] = 0 # 8.8kHz
+##        cepstrum_[6] = 0 # 7.3kHz
+##        cepstrum_[7] = 0 # 6.3kHz
+##        cepstrum_[8] = 0 # 5.5kHz
+        indx_max = n_points_to_skip + cepstrum_[n_points_to_skip:num_points].argmax()
+        goodness_of_pitch = cepstrum_[indx_max]
+        pitch = self.sample_rate/indx_max
+        
+        if plot_it:
+            if title is None:
+                title = 'Cepstrum'
+            self._plot_time(cepstrum_, offset_i=0, num_points=num_points,
+                            title=title, ylabel='cepstrum')
+
+        return goodness_of_pitch, pitch
 
 
 if __name__ == '__main__':
