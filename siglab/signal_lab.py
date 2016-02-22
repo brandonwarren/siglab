@@ -150,8 +150,8 @@ class SignalLab(object):
         cepstrum_ = numpy.abs(numpy.fft.ifft(numpy.log(self.power)))
 
         # compute pitch, goodness_of_pitch
-        indx_max = self._n_cepstrum_points_to_skip_for_pitch + \
-                   cepstrum_[self._n_cepstrum_points_to_skip_for_pitch:num_points].argmax()
+        n_skip = self._n_cepstrum_points_to_skip_for_pitch
+        indx_max = n_skip + cepstrum_[n_skip:num_points].argmax()
         goodness_of_pitch = cepstrum_[indx_max]
         pitch = self.sample_rate/indx_max
 
@@ -162,7 +162,7 @@ class SignalLab(object):
             self._plot_time(cepstrum_, offset_i=0, num_points=num_points,
                             title=title, ylabel='cepstrum')
             plt.annotate(xy=(self.sample_times[indx_max], goodness_of_pitch),
-                         s='* {:.1f}Hz'.format(pitch), color='b')
+                         s='{:.0f}Hz'.format(pitch), color='b')
 
         return goodness_of_pitch, pitch
 
