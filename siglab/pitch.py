@@ -59,14 +59,14 @@ plt.title('Max pitch={:.1f}kHz N={} overlap={}%'.format(1e-3*data.max_pitch_freq
                                                      N, int(overlap*100)))
 
 
-##offset = 0.035
-##title = 'high freq stack? offset={:.3f}'.format(offset)
-##data.plot_time(offset_time=offset, num_points=N, title=title)
-##data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False, title=title)
-###data.autocorrelation(N/2, title=title)
-##goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
-##print '{}: goodness = {:.2f} pitch = {:.1f}'.format(title,
-##                                                    goodness_of_pitch, pitch)
+offset = 0.546 # 0.035
+title = 'nice stack, offset={:.3f}'.format(offset)
+#data.plot_time(offset_time=offset, num_points=N, title=title)
+data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False, title=title)
+#data.autocorrelation(N/2, title=title)
+goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
+print '{}: goodness = {:.2f} pitch = {:.1f}'.format(title,
+                                                    goodness_of_pitch, pitch)
 
 
 

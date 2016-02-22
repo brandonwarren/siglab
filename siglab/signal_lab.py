@@ -161,6 +161,8 @@ class SignalLab(object):
             cepstrum_[0] = 0 # clear the zero-shift point so it doesn't affect scale
             self._plot_time(cepstrum_, offset_i=0, num_points=num_points,
                             title=title, ylabel='cepstrum')
+            plt.annotate(xy=(self.sample_times[indx_max], goodness_of_pitch),
+                         s='* {:.1f}Hz'.format(pitch), color='b')
 
         return goodness_of_pitch, pitch
 
