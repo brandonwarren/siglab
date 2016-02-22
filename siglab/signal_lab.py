@@ -12,6 +12,12 @@ import wave
 import numpy
 import matplotlib.pyplot as plt
 
+# Max cepstrum freq of interest: keep 1st point above this freq and
+# all the ones below.
+# this should be set by user (caller), and the actual number should be computed
+# and shown (e.g. if this is set to 10kHz, show 11kHz) self.top_cepstrum_freq
+UPPER_CEPSTRUM_FREQ = 4.5e3# 4.5e3
+
 class SignalLab(object):
     """Class for opening, plotting, and analyzing sound files (only wav for now).
 
@@ -43,6 +49,29 @@ class SignalLab(object):
             self.sample_times = numpy.arange(0,
                                              (self.n_wav_samps+1)*self.delta_t,
                                              self.delta_t)
+
+            # determine number of cepstrum points to ignore (clear or skip)
+            # e.g. sample rate is 44.1 kHz
+##            cepstrum_[0] = 0 # no shift MUST CLEAR THIS, zero shift is always max
+##            cepstrum_[1] = 0 # 44.1 kHz (won't be at sample rate, or even 1/2 it
+##            cepstrum_[2] = 0 # 22 kHz - don't want this often-large value boosting goodness-of-pitch
+##            cepstrum_[3] = 0 # 14.7 kHz
+##            cepstrum_[4] = 0 # 11 kHz
+##            cepstrum_[5] = 0 # 8.8 kHz
+##            cepstrum_[6] = 0 # 7.4 kHz
+##            cepstrum_[7] = 0 # 6.3 kHz
+##            cepstrum_[8] = 0 # 5.5 kHz
+##            cepstrum_[9] = 0 # 4.9 kHz
+##            cepstrum_[10] = 0 # 4.4 kHz
+            self.n_cepstrum_points_to_skip = 1 # always clear 1st point (zero shift)
+            while True:
+                next_f = self.sample_rate/(self.n_cepstrum_points_to_skip+1)
+                if next_f < UPPER_CEPSTRUM_FREQ:
+                    break
+                self.n_cepstrum_points_to_skip += 1
+            self.top_cepstrum_freq = self.sample_rate/self.n_cepstrum_points_to_skip
+            print('n_cepstrum_points_to_skip = {}, top cepstrum freq = {:.1f}kHz'.format(
+                self.n_cepstrum_points_to_skip, self.top_cepstrum_freq))
         finally:
             snd.close()
 
@@ -130,26 +159,21 @@ class SignalLab(object):
         """
         # TODO: verify alg
         cepstrum_ = numpy.abs(numpy.fft.ifft(numpy.log(self.power)))
-        n_points_to_skip = 9
-        cepstrum_[0:n_points_to_skip] = 0
-##        cepstrum_[0] = 0 # no shift MUST CLEAR THIS, zero shift is always max
-##        cepstrum_[1] = 0 # 44 kHz (won't be at sample rate, or even 1/2 it
-##        cepstrum_[2] = 0 # 22kHz - don't want this often-large value boosting goodness-of-pitch
-##        cepstrum_[3] = 0 # 15kHz
-##        cepstrum_[4] = 0 # 11kHz
-##        cepstrum_[5] = 0 # 8.8kHz
-##        cepstrum_[6] = 0 # 7.3kHz
-##        cepstrum_[7] = 0 # 6.3kHz
-##        cepstrum_[8] = 0 # 5.5kHz
-        indx_max = n_points_to_skip + cepstrum_[n_points_to_skip:num_points].argmax()
+        indx_max = self.n_cepstrum_points_to_skip + \
+                   cepstrum_[self.n_cepstrum_points_to_skip:num_points].argmax()
         goodness_of_pitch = cepstrum_[indx_max]
         pitch = self.sample_rate/indx_max
-        
+
         if plot_it:
             if title is None:
                 title = 'Cepstrum'
+            # n_cepstrum_points_to_skip ONLY AFFECTS pitch calculations, not plot. No need to alter plot.
+            # cepstrum_[0:self.n_cepstrum_points_to_skip] = 0
+            cepstrum_[0] = 0 # just clear the zero-shift point
+            # ylabel = 'cepstrum (f>{:.1f}kHz'.format(UPPER_CEPSTRUM_FREQ)
+            ylabel = 'cepstrum'
             self._plot_time(cepstrum_, offset_i=0, num_points=num_points,
-                            title=title, ylabel='cepstrum')
+                            title=title, ylabel=ylabel)
 
         return goodness_of_pitch, pitch
 

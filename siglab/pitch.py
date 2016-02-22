@@ -9,7 +9,7 @@ import signal_lab
 
 path = 'zf3017_42337.39741472_11_29_11_2_21_motif_1.wav'
 data = signal_lab.SignalLab(path)
-data.plot_time(offset_time=0.0)
+#data.plot_time(offset_time=0.0)
 
 N = 1024
 dur_of_N = data.sample_times[N] # how much time N represents
@@ -52,6 +52,19 @@ ax2.set_ylabel('goodness', color='r')
 for tlab in ax2.get_yticklabels():
     tlab.set_color('r')
 
-plt.title('N={} overlap={}%'.format(N, int(overlap*100)))
+plt.title('Max CF={:.1f}kHz N={} overlap={}%'.format(1e-3*data.top_cepstrum_freq,
+                                                     N, int(overlap*100)))
+
+
+offset = 0.0469
+title = 'high freq stack?'
+data.plot_time(offset_time=offset, num_points=N, title=title)
+data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False, title=title)
+#data.autocorrelation(N/2, title=title)
+goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
+print '{}: goodness = {:.2f} pitch = {:.1f}'.format(title,
+                                                    goodness_of_pitch, pitch)
+
+
 
 plt.show() # shows plots and waits for user to close them all
