@@ -77,7 +77,7 @@ class SignalLab(object):
 
         May be overridden to plot using different library or method (e.g. to PNG file).
         """
-        plt.figure()
+        plt.figure(figsize=(8.0, 4.0), dpi=80)
         subplot = plt.subplot(1,1,1) # only needed if I want to call subplot methods
         plt.plot(self.sample_times[offset_i:offset_i+num_points],
                  data[:num_points],
@@ -89,7 +89,7 @@ class SignalLab(object):
         plt.grid(True)
 
     def _plot_freq(self, data, blocksize, title='', xlabel='Hz', ylabel=''):
-        plt.figure()
+        plt.figure(figsize=(8.0, 4.0), dpi=80)
         subplot = plt.subplot(1,1,1) # only needed if I want to call subplot methods
         delta_f = self.sample_rate/blocksize # 1/T
         x_scale = numpy.arange(0, (blocksize/2+1)*delta_f, delta_f)[:blocksize/2]
@@ -162,7 +162,7 @@ class SignalLab(object):
             self._plot_time(cepstrum_, offset_i=0, num_points=num_points,
                             title=title, ylabel='cepstrum')
             plt.annotate(xy=(self.sample_times[indx_max], goodness_of_pitch),
-                         s='{:.0f}Hz'.format(pitch), color='b')
+                         s='{0:.0f}Hz'.format(pitch), color='b')
 
         return goodness_of_pitch, pitch
 
