@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 import signal_lab
 
 path = 'zf3017_42337.39741472_11_29_11_2_21_motif_1.wav'
-data = signal_lab.SignalLab(path)
+data = signal_lab.SignalLab(path, max_pitch_freq=5.9e3)
+print('_n_cepstrum_points_to_skip_for_pitch = {}, max pitch freq = {:.1f}kHz'.format(
+    data._n_cepstrum_points_to_skip_for_pitch, data.max_pitch_freq))
 #data.plot_time(offset_time=0.0)
 
 N = 1024
@@ -25,6 +27,7 @@ goodness_of_pitch = []
 pitch = []
 
 offset = 0.0
+#end_time = 0.1 # TEMP
 while offset+dur_of_N < end_time:
     data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False)
     good, p = data.cepstrum(N/2, plot_it=False)
@@ -33,7 +36,7 @@ while offset+dur_of_N < end_time:
     goodness_of_pitch.append(good)
     pitch.append(p)
 
-    print 'offset = {:.3f} goodness = {:.2f} pitch = {:.1f}'.format(offset, good, p)
+    # print 'offset = {:.3f} goodness = {:.2f} pitch = {:.1f}'.format(offset, good, p)
     offset += inc_t
 
 # http://matplotlib.org/examples/api/two_scales.html#api-two-scales
@@ -52,18 +55,18 @@ ax2.set_ylabel('goodness', color='r')
 for tlab in ax2.get_yticklabels():
     tlab.set_color('r')
 
-plt.title('Max CF={:.1f}kHz N={} overlap={}%'.format(1e-3*data.top_cepstrum_freq,
+plt.title('Max pitch={:.1f}kHz N={} overlap={}%'.format(1e-3*data.max_pitch_freq,
                                                      N, int(overlap*100)))
 
 
-offset = 0.0469
-title = 'high freq stack?'
-data.plot_time(offset_time=offset, num_points=N, title=title)
-data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False, title=title)
-#data.autocorrelation(N/2, title=title)
-goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
-print '{}: goodness = {:.2f} pitch = {:.1f}'.format(title,
-                                                    goodness_of_pitch, pitch)
+##offset = 0.035
+##title = 'high freq stack? offset={:.3f}'.format(offset)
+##data.plot_time(offset_time=offset, num_points=N, title=title)
+##data.power_spectrum(offset_time=offset, blocksize=N, plot_it=False, title=title)
+###data.autocorrelation(N/2, title=title)
+##goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
+##print '{}: goodness = {:.2f} pitch = {:.1f}'.format(title,
+##                                                    goodness_of_pitch, pitch)
 
 
 
