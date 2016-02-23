@@ -25,7 +25,7 @@ class SignalLab(object):
         max_pitch_freq (float): based on user-supplied max_pitch_freq
     """
 
-    def __init__(self, path, max_pitch_freq=4e3):
+    def __init__(self, path, max_pitch_freq=4.2e3):
         """This just opens, reads, and closes the wav file.
 
         Args:
@@ -45,6 +45,7 @@ class SignalLab(object):
             self.sample_times = numpy.arange(0,
                                              (self.n_wav_samps+1)*self.delta_t,
                                              self.delta_t)
+            self.window = numpy.zeros(2) # don't know window size. won't be 2.
 
             # calc self._n_cepstrum_points_to_skip_for_pitch - keep 1st point above
             # max_pitch_freq and all the ones below.
@@ -114,12 +115,23 @@ class SignalLab(object):
         num_points = min(num_points, max_num_points)
         self._plot_time(self.sound_data[offset_i:], offset_i, num_points, title=title)
 
-    def power_spectrum(self, offset_time, blocksize, plot_it=True, title=None):
+    def power_spectrum(self, offset_time, blocksize, window_it=True,
+                       plot_it=True, title=None):
         """Compute and plot power spectrum of sound file.
         """
         # TODO: window, verify alg
         i = int(0.5 + offset_time*self.sample_rate)
-        fft = numpy.fft.fft(self.sound_data[i:i+blocksize])
+        fft_input = self.sound_data[i:i+blocksize] # numpy - does not copy
+        if window_it:
+            if self.window.shape != (blocksize,):
+                # hann window
+                d = 2.0 * numpy.pi / (blocksize-1)
+                twopi = 2.0 * numpy.pi
+                self.window = 0.5 * (1.0 - numpy.cos(
+                    numpy.arange(0.0, twopi+d, d, dtype=numpy.float32)))
+            fft_input = fft_input.copy() # make copy
+            fft_input *= self.window
+        fft = numpy.fft.fft(fft_input)
         self.power = fft*fft
         self.power = numpy.abs(self.power) # combine with line above?
         if plot_it:
