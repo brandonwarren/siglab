@@ -178,6 +178,61 @@ class SignalLab(object):
 
         return goodness_of_pitch, pitch
 
+    def goodness_of_pitch(self, blocksize=1024, overlap=.50, threshold=.25,
+                          plot_it=True, title=None):
+        """Compute and optionally plot pitch and goodness-of-pitch of sound file.
+        """
+        dur_of_N = self.sample_times[blocksize] # how much time N represents
+        end_time = self.sample_times[self.n_wav_samps-1]
+        inc_t = dur_of_N - overlap*dur_of_N
+
+        # Because we may be using overlap, the number of measurements
+        # is not obvious. Since the actual number is small, just use lists.
+        time = []
+        goodness_of_pitch = []
+        pitch = []
+
+        offset = 0.0
+        while offset+dur_of_N < end_time:
+            self.power_spectrum(offset_time=offset, blocksize=blocksize,
+                                window_it=True, plot_it=False)
+            good, p = self.cepstrum(blocksize/2, plot_it=False)
+            time.append(offset+0.5*dur_of_N)
+            goodness_of_pitch.append(good)
+            pitch.append(p)
+            offset += inc_t
+
+        if threshold:
+            mx_good = max(goodness_of_pitch)
+            mn_good = min(goodness_of_pitch)
+            goodness_threshold = threshold*(mx_good-mn_good) + mn_good
+            
+        if plot_it:
+            fig, ax1 = plt.subplots(figsize=(10.0, 4.0), dpi=80)
+            ax1.plot(time, pitch, 'b.')
+            ax1.set_ylabel('pitch', color='b')
+            for tlab in ax1.get_yticklabels():
+                tlab.set_color('b')
+
+            plt.grid(True)
+
+            ax2 = ax1.twinx()
+            ax2.plot(time, goodness_of_pitch, 'r.-')
+            if threshold:
+                ax2.plot([time[0], time[-1]],
+                         [goodness_threshold, goodness_threshold],
+                         'm--')
+            ax2.set_xlabel('Seconds')
+            ax2.set_ylabel('goodness', color='r')
+            for tlab in ax2.get_yticklabels():
+                tlab.set_color('r')
+            ax2.set_xlim([0.0, end_time*1.01])
+
+            if title is None:
+                title = 'Goodness of pitch'
+            plt.title(title)
+
+        return
 
 if __name__ == '__main__':
     # Example of how to use SignalLab.
@@ -187,12 +242,13 @@ if __name__ == '__main__':
     #
     # path = 'C:\\Users\\Brandon\\Documents\\perkel\\motifs - clean 11-29-15\\zf3017_42337.39741472_11_29_11_2_21_motif_1.wav'
     path = 'zf3017_42337.39741472_11_29_11_2_21_motif_1.wav'
-    data = SignalLab(path)
-    data.plot_time(offset_time=0.0)
+    signal_data = SignalLab(path)
+    signal_data.plot_time(offset_time=0.0)
     N = 1024
     offset = 0.57 # nice harmonic stack at this location
-    data.plot_time(offset_time=offset, num_points=N) #offset_dur=0.1)
-    data.power_spectrum(offset_time=offset, blocksize=N)
-    data.autocorrelation(N/2)   # good?
-    data.cepstrum(N/2)          # bad? no looks good!
+    signal_data.plot_time(offset_time=offset, num_points=N) #offset_dur=0.1)
+    signal_data.power_spectrum(offset_time=offset, blocksize=N)
+    signal_data.autocorrelation(N/2)   # good?
+    signal_data.cepstrum(N/2)          # bad? no looks good!
+    signal_data.goodness_of_pitch()
     plt.show() # shows plots and waits for user to close them all

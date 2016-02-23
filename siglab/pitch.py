@@ -18,49 +18,10 @@ print('_n_cepstrum_points_to_skip_for_pitch = {0}, max pitch freq = {1:.1f}kHz'.
     data._n_cepstrum_points_to_skip_for_pitch, data.max_pitch_freq))
 #data.plot_time(offset_time=0.0)
 
-dur_of_N = data.sample_times[N] # how much time N represents
-end_time = data.sample_times[data.n_wav_samps-1]
-
-inc_t = dur_of_N - overlap*dur_of_N
-
-# Because we may be using overlap, the number of measurements
-# is not obvious. Since the actual number is small, just use lists.
-time = []
-goodness_of_pitch = []
-pitch = []
-
-offset = 0.0
-#end_time = 0.1 # TEMP
-while offset+dur_of_N < end_time:
-    data.power_spectrum(offset_time=offset, blocksize=N, window_it=window_it,
-                        plot_it=False)
-    good, p = data.cepstrum(N/2, plot_it=False)
-
-    time.append(offset)
-    goodness_of_pitch.append(good)
-    pitch.append(p)
-
-    # print 'offset = {0:.3f} goodness = {1:.2f} pitch = {2:.1f}'.format(offset, good, p)
-    offset += inc_t
-
-# http://matplotlib.org/examples/api/two_scales.html#api-two-scales
-fig, ax1 = plt.subplots(figsize=(10.0, 4.0), dpi=80)
-ax1.plot(time, pitch, 'b.')
-ax1.set_ylabel('pitch', color='b')
-for tlab in ax1.get_yticklabels():
-    tlab.set_color('b')
-
-plt.grid(True)
-
-ax2 = ax1.twinx()
-ax2.plot(time, goodness_of_pitch, 'r')
-ax2.set_xlabel('Seconds')
-ax2.set_ylabel('goodness', color='r')
-for tlab in ax2.get_yticklabels():
-    tlab.set_color('r')
-
-plt.title('Max pitch={0:.1f}kHz N={1} overlap={2}%'.format(1e-3*data.max_pitch_freq,
-                                                     N, int(overlap*100)))
+title = 'Max pitch={0:.1f}kHz N={1} overlap={2}%'.format(
+    1e-3*data.max_pitch_freq, N, int(overlap*100))
+data.goodness_of_pitch(blocksize=N, overlap=overlap, threshold=0.25,
+                       plot_it=True, title=title)
 
 
 offset = 0.546 # 0.035
@@ -82,7 +43,5 @@ data.power_spectrum(offset_time=offset, blocksize=N, window_it=window_it,
 goodness_of_pitch, pitch = data.cepstrum(N/2, title=title)
 print '{0}: goodness = {1:.2f} pitch = {2:.1f}'.format(title,
                                                     goodness_of_pitch, pitch)
-
-
 
 plt.show() # shows plots and waits for user to close them all
