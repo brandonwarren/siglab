@@ -202,11 +202,37 @@ class SignalLab(object):
             pitch.append(p)
             offset += inc_t
 
+        stacks = []
         if threshold:
             mx_good = max(goodness_of_pitch)
             mn_good = min(goodness_of_pitch)
             goodness_threshold = threshold*(mx_good-mn_good) + mn_good
-            
+            # identify periods with goodness-of-pitch above goodness_threshold
+            # these periods are stacked harmonics (stacks for short)
+            stack_pitches = [] # contains pitch values for each stack (temp)
+            for i, good in enumerate(goodness_of_pitch):
+                if good > goodness_threshold:
+                    if stack_pitches:
+                        # still in stacked harmonic
+                        stack_pitches.append(pitch[i])
+                    else:
+                        # start of stacked harmonic
+                        start_t = time[i]
+                        stack_pitches.append(pitch[i])
+                else:
+                    # below threshold
+                    if stack_pitches:
+                        # close the stack
+                        dur = time[i] - start_t
+                        stacks.append((start_t, dur, stack_pitches))
+                        stack_pitches = []
+                    # else - below thr, no open stack - nothing to do
+            # what if stack still open (end above thrsh)? close it
+            if stack_pitches:
+                dur = time[-1] - start_t
+                stacks.append((start_t, dur, stack_pitches))
+                stack_pitches = []
+
         if plot_it:
             fig, ax1 = plt.subplots(figsize=(10.0, 4.0), dpi=80)
             ax1.plot(time, pitch, 'b.')
@@ -232,7 +258,7 @@ class SignalLab(object):
                 title = 'Goodness of pitch'
             plt.title(title)
 
-        return
+        return stacks
 
 if __name__ == '__main__':
     # Example of how to use SignalLab.
@@ -250,5 +276,8 @@ if __name__ == '__main__':
     signal_data.power_spectrum(offset_time=offset, blocksize=N)
     signal_data.autocorrelation(N/2)   # good?
     signal_data.cepstrum(N/2)          # bad? no looks good!
-    signal_data.goodness_of_pitch()
+    stacks = signal_data.goodness_of_pitch()
+    for stack in stacks:
+        print('stack start time: {0:.3f} dur: {1:.3f} pitches: {2}'.format(
+            stack[0], stack[1], stack[2]))
     plt.show() # shows plots and waits for user to close them all
