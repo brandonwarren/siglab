@@ -119,7 +119,7 @@ class SignalLab(object):
                        plot_it=True, title=None):
         """Compute and plot power spectrum of sound file.
         """
-        # TODO: window, verify alg
+        # TODO: verify alg
         i = int(0.5 + offset_time*self.sample_rate)
         fft_input = self.sound_data[i:i+blocksize] # numpy - does not copy
         if window_it:
@@ -180,8 +180,10 @@ class SignalLab(object):
 
     def goodness_of_pitch(self, blocksize=1024, overlap=.50, threshold=.25,
                           plot_it=True, title=None):
-        """Compute and optionally plot pitch and goodness-of-pitch of sound file.
+        """Compute and optionally plot pitch, goodness-of-pitch, and entropy
+        of sound file.
         """
+        # TODO: verify alg
         dur_of_N = self.sample_times[blocksize] # how much time N represents
         end_time = self.sample_times[self.n_wav_samps-1]
         inc_t = dur_of_N - overlap*dur_of_N
@@ -190,6 +192,7 @@ class SignalLab(object):
         # is not obvious. Since the actual number is small, just use lists.
         time = []
         goodness_of_pitch = []
+        entropy = []
         pitch = []
 
         offset = 0.0
@@ -200,6 +203,12 @@ class SignalLab(object):
             time.append(offset+0.5*dur_of_N)
             goodness_of_pitch.append(good)
             pitch.append(p)
+
+            # entropy
+            am = self.power.mean()
+            gm = numpy.exp( numpy.log(self.power).mean() )
+            entropy.append(gm/am)
+
             offset += inc_t
 
         stacks = []
@@ -248,6 +257,13 @@ class SignalLab(object):
                 ax2.plot([time[0], time[-1]],
                          [goodness_threshold, goodness_threshold],
                          'm--')
+
+            # plot entropy, scale to fit with goodness-of-pitch so easy to see
+            mx_good = max(goodness_of_pitch)
+            mx_entropy = max(entropy)
+            entropy_plot_array = numpy.array(entropy) * mx_good/mx_entropy
+            ax2.plot(time, entropy_plot_array, 'g.-')
+
             ax2.set_xlabel('Seconds')
             ax2.set_ylabel('goodness', color='r')
             for tlab in ax2.get_yticklabels():
@@ -255,7 +271,7 @@ class SignalLab(object):
             ax2.set_xlim([0.0, end_time*1.01])
 
             if title is None:
-                title = 'Goodness of pitch'
+                title = 'Goodness of pitch (entropy in green)'
             plt.title(title)
 
         return stacks
