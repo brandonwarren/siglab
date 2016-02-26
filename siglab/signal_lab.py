@@ -12,6 +12,42 @@ import wave
 import numpy
 import matplotlib.pyplot as plt
 from matplotlib import mlab
+from pylab import gca
+
+def specgram_freq_limit(x, NFFT=256, Fs=2, Fc=0, detrend=mlab.detrend_none,
+             window=mlab.window_hanning, noverlap=128,
+             cmap=None, xextent=None, pad_to=None, sides='default',
+             scale_by_freq=None, minfreq=None, maxfreq=None, **kwargs):
+    """Wrapper for matplotlib.pyplot.specgram to remove frequencies not of
+    interest. You can call set_ylim([0.0, max_freq]), but the colors will
+    remain unchanged. This will cause the full range of color to appear.
+
+    From http://stackoverflow.com/questions/19468923/cutting-of-unused-frequencies-in-specgram-matplotlib
+    """
+
+    ax = gca()
+    Pxx, freqs, bins = mlab.specgram(x, NFFT=NFFT, Fs=Fs, detrend=detrend,
+         window=window, noverlap=noverlap, pad_to=pad_to, sides=sides,
+        scale_by_freq=scale_by_freq, **kwargs)
+
+    # modified here
+    #####################################
+    if minfreq is not None and maxfreq is not None:
+        Pxx = Pxx[(freqs >= minfreq) & (freqs <= maxfreq)]
+        freqs = freqs[(freqs >= minfreq) & (freqs <= maxfreq)]
+    #####################################
+
+    Z = 10. * numpy.log10(Pxx)
+    Z = numpy.flipud(Z)
+
+    if xextent is None: xextent = 0, numpy.amax(bins)
+    xmin, xmax = xextent
+    freqs += Fc
+    extent = xmin, xmax, freqs[0], freqs[-1]
+    im = ax.imshow(Z, cmap, extent=extent, **kwargs)
+    ax.axis('auto')
+
+    return Pxx, freqs, bins, im
 
 class SignalLab(object):
     """Class for opening, plotting, and analyzing sound files (only wav for now).
@@ -132,6 +168,7 @@ class SignalLab(object):
             duration (float): number of seconds to plot
             num_points (int): num samples to plot (if duration not specified)
             blocksize (int): FFT blocksize
+            max_freq (float): max freq of interest
             title (str): title of plot
         """
         if title is None:
@@ -147,13 +184,12 @@ class SignalLab(object):
         num_points = min(num_points, max_num_points)
 
         plt.figure(figsize=(8.0, 4.0), dpi=80)
-        subplot = plt.subplot(1,1,1) # only needed if I want to call subplot methods
-        spectrum, freqs, t, im  = plt.specgram(
+        #spectrum, freqs, t, im  = plt.specgram(
+        spectrum, freqs, t, im  = specgram_freq_limit(
             self.sound_data[offset_i:offset_i+num_points], NFFT=blocksize,
             Fs=self.sample_rate,
-            window=mlab.window_hanning, noverlap=blocksize/2)
-        if max_freq:
-            subplot.set_ylim([0.0, max_freq])
+            window=mlab.window_hanning, noverlap=blocksize/2,
+            minfreq=0.0, maxfreq=max_freq) # new
         plt.title(title)
         plt.xlabel('Seconds')
         plt.ylabel('Hz')
