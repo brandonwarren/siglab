@@ -17,7 +17,7 @@ from pylab import gca
 def specgram_freq_limit(x, NFFT=256, Fs=2, Fc=0, detrend=mlab.detrend_none,
              window=mlab.window_hanning, noverlap=128,
              cmap=None, xextent=None, pad_to=None, sides='default',
-             scale_by_freq=None, minfreq=None, maxfreq=None, **kwargs):
+             scale_by_freq=None, minfreq=0.0, maxfreq=None, ax=None, **kwargs):
     """Wrapper for matplotlib.pyplot.specgram to remove frequencies not of
     interest. You can call set_ylim([0.0, max_freq]), but the colors will
     remain unchanged. This will cause the full range of color to appear.
@@ -25,14 +25,15 @@ def specgram_freq_limit(x, NFFT=256, Fs=2, Fc=0, detrend=mlab.detrend_none,
     From http://stackoverflow.com/questions/19468923/cutting-of-unused-frequencies-in-specgram-matplotlib
     """
 
-    ax = gca()
+    if ax is None:
+        ax = gca()
     Pxx, freqs, bins = mlab.specgram(x, NFFT=NFFT, Fs=Fs, detrend=detrend,
          window=window, noverlap=noverlap, pad_to=pad_to, sides=sides,
         scale_by_freq=scale_by_freq, **kwargs)
 
     # modified here
     #####################################
-    if minfreq is not None and maxfreq is not None:
+    if maxfreq is not None:
         Pxx = Pxx[(freqs >= minfreq) & (freqs <= maxfreq)]
         freqs = freqs[(freqs >= minfreq) & (freqs <= maxfreq)]
     #####################################
@@ -189,7 +190,7 @@ class SignalLab(object):
             self.sound_data[offset_i:offset_i+num_points], NFFT=blocksize,
             Fs=self.sample_rate,
             window=mlab.window_hanning, noverlap=blocksize/2,
-            minfreq=0.0, maxfreq=max_freq) # new
+            maxfreq=max_freq) # new - limit freq
         plt.title(title)
         plt.xlabel('Seconds')
         plt.ylabel('Hz')
