@@ -124,7 +124,7 @@ class SignalLab(object):
         self._plot_time(self.sound_data[offset_i:], offset_i, num_points, title=title)
 
     def plot_spectrogram(self, offset_time=0.0, duration=None, num_points=None,
-                  blocksize=512, title=None):
+                  blocksize=512, max_freq=None, title=None):
         """Plot spectrogram of sound file.
 
         Args:
@@ -147,10 +147,13 @@ class SignalLab(object):
         num_points = min(num_points, max_num_points)
 
         plt.figure(figsize=(8.0, 4.0), dpi=80)
+        subplot = plt.subplot(1,1,1) # only needed if I want to call subplot methods
         spectrum, freqs, t, im  = plt.specgram(
             self.sound_data[offset_i:offset_i+num_points], NFFT=blocksize,
             Fs=self.sample_rate,
             window=mlab.window_hanning, noverlap=blocksize/2)
+        if max_freq:
+            subplot.set_ylim([0.0, max_freq])
         plt.title(title)
         plt.xlabel('Seconds')
         plt.ylabel('Hz')
@@ -336,5 +339,5 @@ if __name__ == '__main__':
     for stack in stacks:
         print('stack start time: {0:.3f} dur: {1:.3f} pitches: {2}'.format(
             stack[0], stack[1], stack[2]))
-    signal_data.plot_spectrogram()
+    signal_data.plot_spectrogram(max_freq=10e3)
     plt.show() # shows plots and waits for user to close them all
