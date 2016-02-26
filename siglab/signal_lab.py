@@ -11,6 +11,7 @@ Written Feb 2016 by Brandon Warren (bwarren@uw.edu)
 import wave
 import numpy
 import matplotlib.pyplot as plt
+from matplotlib import mlab
 
 class SignalLab(object):
     """Class for opening, plotting, and analyzing sound files (only wav for now).
@@ -101,19 +102,58 @@ class SignalLab(object):
         subplot.set_autoscale_on(True)
         plt.grid(True)
 
-    def plot_time(self, offset_time=0.0, num_points=None, offset_dur=None, title=None):
+    def plot_time(self, offset_time=0.0, duration=None, num_points=None, 
+                  title=None):
         """Plot time history of sound file.
+
+        Args:
+            offset_time (float): offset from start of file to begin, in seconds
+            duration (float): number of seconds to plot
+            num_points (int): num samples to plot (if duration not specified)
+            title (str): title of plot
         """
         if title is None:
             title = self.path
         offset_i = int(0.5 + offset_time*self.sample_rate)
-        if offset_dur:
-            num_points = int(0.5 + offset_dur*self.sample_rate)
+        if duration:
+            num_points = int(0.5 + duration*self.sample_rate)
         elif num_points is None:
             num_points = self.n_wav_samps
         max_num_points = self.n_wav_samps - offset_i
         num_points = min(num_points, max_num_points)
         self._plot_time(self.sound_data[offset_i:], offset_i, num_points, title=title)
+
+    def plot_spectrogram(self, offset_time=0.0, duration=None, num_points=None,
+                  blocksize=512, title=None):
+        """Plot spectrogram of sound file.
+
+        Args:
+            offset_time (float): offset from start of file to begin, in seconds
+            duration (float): number of seconds to plot
+            num_points (int): num samples to plot (if duration not specified)
+            blocksize (int): FFT blocksize
+            title (str): title of plot
+        """
+        if title is None:
+            title = self.path
+        if offset_time:
+            title += ' offset of {0:.3f} sec'.format(offset_time)
+        offset_i = int(0.5 + offset_time*self.sample_rate)
+        if duration:
+            num_points = int(0.5 + duration*self.sample_rate)
+        elif num_points is None:
+            num_points = self.n_wav_samps
+        max_num_points = self.n_wav_samps - offset_i
+        num_points = min(num_points, max_num_points)
+
+        plt.figure(figsize=(8.0, 4.0), dpi=80)
+        spectrum, freqs, t, im  = plt.specgram(
+            self.sound_data[offset_i:offset_i+num_points], NFFT=blocksize,
+            Fs=self.sample_rate,
+            window=mlab.window_hanning, noverlap=blocksize/2)
+        plt.title(title)
+        plt.xlabel('Seconds')
+        plt.ylabel('Hz')
 
     def power_spectrum(self, offset_time, blocksize, window_it=True,
                        plot_it=True, title=None):
@@ -288,7 +328,7 @@ if __name__ == '__main__':
     signal_data.plot_time(offset_time=0.0)
     N = 1024
     offset = 0.57 # nice harmonic stack at this location
-    signal_data.plot_time(offset_time=offset, num_points=N) #offset_dur=0.1)
+    signal_data.plot_time(offset_time=offset, num_points=N)
     signal_data.power_spectrum(offset_time=offset, blocksize=N)
     signal_data.autocorrelation(N/2)   # good?
     signal_data.cepstrum(N/2)          # bad? no looks good!
@@ -296,4 +336,5 @@ if __name__ == '__main__':
     for stack in stacks:
         print('stack start time: {0:.3f} dur: {1:.3f} pitches: {2}'.format(
             stack[0], stack[1], stack[2]))
+    signal_data.plot_spectrogram()
     plt.show() # shows plots and waits for user to close them all
